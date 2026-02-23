@@ -26,6 +26,17 @@
                 Errors = errors ?? new List<string>()
             };
         }
+
+        public static ApiResponse<T> ErrorResponseWithData(string message, T data, List<string>? errors = null)
+        {
+            return new ApiResponse<T>
+            {
+                Success = false,
+                Message = message,
+                Data = data,
+                Errors = errors ?? new List<string>()
+            };
+        }
     }
 
     public class ApiResponse

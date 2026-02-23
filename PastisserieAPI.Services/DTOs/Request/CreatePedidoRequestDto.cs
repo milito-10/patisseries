@@ -4,7 +4,9 @@
     {
         public int UsuarioId { get; set; }
         public int MetodoPagoId { get; set; }
+        public string? MetodoPago { get; set; } // Simulación: "Tarjeta", "Efectivo"
         public int? DireccionEnvioId { get; set; }
+        public string? Direccion { get; set; } // Simulación: Address text
         public string? NotasCliente { get; set; }
         public List<PedidoItemRequestDto> Items { get; set; } = new();
         public PersonalizadoConfigRequestDto? PersonalizadoConfig { get; set; }

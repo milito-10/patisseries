@@ -51,11 +51,14 @@ namespace PastisserieAPI.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener carrito");
-                return StatusCode(500, ApiResponse<CarritoResponseDto>.ErrorResponse(
-                    "Error al obtener carrito",
-                    new List<string> { ex.Message }
-                ));
+                 // LOGGING A ARCHIVO
+                try {
+                    var logPath = Path.Combine(Directory.GetCurrentDirectory(), "logs");
+                    if (!Directory.Exists(logPath)) Directory.CreateDirectory(logPath);
+                    System.IO.File.AppendAllText(Path.Combine(logPath, "carrito_error.txt"), 
+                        $"{DateTime.Now}: {ex.Message}\n{ex.StackTrace}\n\n");
+                } catch { }
+                return StatusCode(500, ApiResponse<CarritoResponseDto>.ErrorResponse("Error interno: " + ex.Message));
             }
         }
 
@@ -65,32 +68,21 @@ namespace PastisserieAPI.API.Controllers
         [HttpPost("items")]
         public async Task<IActionResult> AddItem([FromBody] AddToCarritoRequestDto request)
         {
-            try
+            var usuarioId = GetUsuarioId();
+
+            if (usuarioId == 0)
             {
-                var usuarioId = GetUsuarioId();
-
-                if (usuarioId == 0)
-                {
-                    return Unauthorized(ApiResponse<CarritoResponseDto>.ErrorResponse(
-                        "Usuario no autenticado"
-                    ));
-                }
-
-                var carrito = await _carritoService.AddItemAsync(usuarioId, request);
-
-                return Ok(ApiResponse<CarritoResponseDto>.SuccessResponse(
-                    carrito,
-                    "Producto agregado al carrito"
+                return Unauthorized(ApiResponse<CarritoResponseDto>.ErrorResponse(
+                    "Usuario no autenticado"
                 ));
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al agregar item al carrito");
-                return StatusCode(500, ApiResponse<CarritoResponseDto>.ErrorResponse(
-                    "Error al agregar producto al carrito",
-                    new List<string> { ex.Message }
-                ));
-            }
+
+            var carrito = await _carritoService.AddItemAsync(usuarioId, request);
+
+            return Ok(ApiResponse<CarritoResponseDto>.SuccessResponse(
+                carrito,
+                "Producto agregado al carrito"
+            ));
         }
 
         /// <summary>
@@ -99,39 +91,28 @@ namespace PastisserieAPI.API.Controllers
         [HttpPut("items/{itemId}")]
         public async Task<IActionResult> UpdateItem(int itemId, [FromBody] UpdateCarritoItemRequestDto request)
         {
-            try
+            var usuarioId = GetUsuarioId();
+
+            if (usuarioId == 0)
             {
-                var usuarioId = GetUsuarioId();
-
-                if (usuarioId == 0)
-                {
-                    return Unauthorized(ApiResponse<CarritoResponseDto>.ErrorResponse(
-                        "Usuario no autenticado"
-                    ));
-                }
-
-                var carrito = await _carritoService.UpdateItemAsync(usuarioId, itemId, request);
-
-                if (carrito == null)
-                {
-                    return NotFound(ApiResponse<CarritoResponseDto>.ErrorResponse(
-                        "Item no encontrado en el carrito"
-                    ));
-                }
-
-                return Ok(ApiResponse<CarritoResponseDto>.SuccessResponse(
-                    carrito,
-                    "Cantidad actualizada"
+                return Unauthorized(ApiResponse<CarritoResponseDto>.ErrorResponse(
+                    "Usuario no autenticado"
                 ));
             }
-            catch (Exception ex)
+
+            var carrito = await _carritoService.UpdateItemAsync(usuarioId, itemId, request);
+
+            if (carrito == null)
             {
-                _logger.LogError(ex, "Error al actualizar item del carrito");
-                return StatusCode(500, ApiResponse<CarritoResponseDto>.ErrorResponse(
-                    "Error al actualizar item",
-                    new List<string> { ex.Message }
+                return NotFound(ApiResponse<CarritoResponseDto>.ErrorResponse(
+                    "Item no encontrado en el carrito"
                 ));
             }
+
+            return Ok(ApiResponse<CarritoResponseDto>.SuccessResponse(
+                carrito,
+                "Cantidad actualizada"
+            ));
         }
 
         /// <summary>
@@ -140,32 +121,21 @@ namespace PastisserieAPI.API.Controllers
         [HttpDelete("items/{itemId}")]
         public async Task<IActionResult> RemoveItem(int itemId)
         {
-            try
+            var usuarioId = GetUsuarioId();
+
+            if (usuarioId == 0)
             {
-                var usuarioId = GetUsuarioId();
-
-                if (usuarioId == 0)
-                {
-                    return Unauthorized(ApiResponse.ErrorResponse("Usuario no autenticado"));
-                }
-
-                var result = await _carritoService.RemoveItemAsync(usuarioId, itemId);
-
-                if (!result)
-                {
-                    return NotFound(ApiResponse.ErrorResponse("Item no encontrado"));
-                }
-
-                return Ok(ApiResponse.SuccessResponse("Item eliminado del carrito"));
+                return Unauthorized(ApiResponse.ErrorResponse("Usuario no autenticado"));
             }
-            catch (Exception ex)
+
+            var result = await _carritoService.RemoveItemAsync(usuarioId, itemId);
+
+            if (!result)
             {
-                _logger.LogError(ex, "Error al eliminar item del carrito");
-                return StatusCode(500, ApiResponse.ErrorResponse(
-                    "Error al eliminar item",
-                    new List<string> { ex.Message }
-                ));
+                return NotFound(ApiResponse.ErrorResponse("Item no encontrado"));
             }
+
+            return Ok(ApiResponse.SuccessResponse("Item eliminado del carrito"));
         }
 
         /// <summary>
@@ -174,32 +144,21 @@ namespace PastisserieAPI.API.Controllers
         [HttpDelete("clear")]
         public async Task<IActionResult> ClearCarrito()
         {
-            try
+            var usuarioId = GetUsuarioId();
+
+            if (usuarioId == 0)
             {
-                var usuarioId = GetUsuarioId();
-
-                if (usuarioId == 0)
-                {
-                    return Unauthorized(ApiResponse.ErrorResponse("Usuario no autenticado"));
-                }
-
-                var result = await _carritoService.ClearCarritoAsync(usuarioId);
-
-                if (!result)
-                {
-                    return NotFound(ApiResponse.ErrorResponse("Carrito no encontrado"));
-                }
-
-                return Ok(ApiResponse.SuccessResponse("Carrito vaciado"));
+                return Unauthorized(ApiResponse.ErrorResponse("Usuario no autenticado"));
             }
-            catch (Exception ex)
+
+            var result = await _carritoService.ClearCarritoAsync(usuarioId);
+
+            if (!result)
             {
-                _logger.LogError(ex, "Error al vaciar carrito");
-                return StatusCode(500, ApiResponse.ErrorResponse(
-                    "Error al vaciar carrito",
-                    new List<string> { ex.Message }
-                ));
+                return NotFound(ApiResponse.ErrorResponse("Carrito no encontrado"));
             }
+
+            return Ok(ApiResponse.SuccessResponse("Carrito vaciado"));
         }
     }
 }

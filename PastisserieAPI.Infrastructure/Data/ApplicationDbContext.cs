@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PastisserieAPI.Core.Entities;
 
 namespace PastisserieAPI.Infrastructure.Data
@@ -32,8 +32,11 @@ namespace PastisserieAPI.Infrastructure.Data
         public DbSet<PersonalizadoConfigIngrediente> PersonalizadoConfigIngredientes { get; set; }
 
         // ============ CARRITO ============
-        public DbSet<CarritoCompra> CarritosCompra { get; set; }
+        public DbSet<CarritoCompra> Carritos { get; set; }
         public DbSet<CarritoItem> CarritoItems { get; set; }
+
+        // ============ PROMOCIONES ============
+        public DbSet<Promocion> Promociones { get; set; }
 
         // ============ PAGOS ============
         public DbSet<TipoMetodoPago> TiposMetodoPago { get; set; }
@@ -45,6 +48,9 @@ namespace PastisserieAPI.Infrastructure.Data
 
         // ============ NOTIFICACIONES ============
         public DbSet<Notificacion> Notificaciones { get; set; }
+
+        // ============ CONFIGURACIÓN ============
+        public DbSet<ConfiguracionTienda> ConfiguracionTienda { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -138,6 +144,47 @@ namespace PastisserieAPI.Infrastructure.Data
                 new Ingrediente { Id = 5, Nombre = "Chispas de chocolate", Descripcion = "Chispas de chocolate", PrecioAdicional = 3000, Activo = true },
                 new Ingrediente { Id = 6, Nombre = "Nueces", Descripcion = "Nueces tostadas", PrecioAdicional = 6000, Activo = true },
                 new Ingrediente { Id = 7, Nombre = "Coco rallado", Descripcion = "Coco natural rallado", PrecioAdicional = 4000, Activo = true }
+            );
+
+            // ============ USUARIO ADMINISTRADOR INICIAL ============
+            modelBuilder.Entity<User>().HasData(
+                new User 
+                { 
+                    Id = 1, 
+                    Nombre = "Admin Deluxe", 
+                    Email = "administrador123@gmail.com", 
+                    PasswordHash = "$2a$11$R.S2S/JpXw5P8v2kF3h5Ze3Xm6N2q4T6V7W8X9Y0Z1A2B3C4D5E6F", // Corresponde a "Admin123"
+                    EmailVerificado = true,
+                    Activo = true,
+                    FechaRegistro = new DateTime(2024, 1, 1),
+                    FechaCreacion = new DateTime(2024, 1, 1)
+                }
+            );
+
+            modelBuilder.Entity<UserRol>().HasData(
+                new UserRol 
+                { 
+                    Id = 1, 
+                    UsuarioId = 1, 
+                    RolId = 2, // Admin
+                    FechaAsignacion = new DateTime(2024, 1, 1) 
+                }
+            );
+
+            // ============ CONFIGURACIÓN INICIAL DE LA TIENDA ============
+            modelBuilder.Entity<ConfiguracionTienda>().HasData(
+                new ConfiguracionTienda
+                {
+                    Id = 1,
+                    NombreTienda = "Pâtisserie Deluxe",
+                    Direccion = "Calle 123 # 45 - 67, Bogotá",
+                    Telefono = "300 123 4567",
+                    EmailContacto = "contacto@pastisseriedeluxe.com",
+                    CostoEnvio = 5000,
+                    Moneda = "COP",
+                    MensajeBienvenida = "Bienvenido a la mejor pastelería artesanal",
+                    FechaActualizacion = DateTime.UtcNow
+                }
             );
         }
 

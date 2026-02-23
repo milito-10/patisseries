@@ -14,6 +14,11 @@ namespace PastisserieAPI.Services.Mappings
                 .ForMember(dest => dest.Roles, opt => opt.MapFrom(src =>
                     src.UserRoles.Select(ur => ur.Rol.Nombre).ToList()));
 
+            // 👇 NUEVO MAPA: Para convertir la entidad User en el resumen pequeño
+            CreateMap<User, UsuarioResumenDto>() // O CreateMap<Usuario, UsuarioResumenDto> según tu entidad
+                .ForMember(dest => dest.Nombre, opt => opt.MapFrom(src => src.Nombre))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email));
+
             CreateMap<RegisterRequestDto, User>()
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -21,6 +26,9 @@ namespace PastisserieAPI.Services.Mappings
                 .ForMember(dest => dest.FechaCreacion, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForMember(dest => dest.Activo, opt => opt.MapFrom(src => true))
                 .ForMember(dest => dest.EmailVerificado, opt => opt.MapFrom(src => false));
+
+            CreateMap<CreateUserRequestDto, User>()
+                .IncludeBase<RegisterRequestDto, User>();
 
             CreateMap<UpdateUserRequestDto, User>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
@@ -43,9 +51,11 @@ namespace PastisserieAPI.Services.Mappings
                 .ForMember(dest => dest.FechaActualizacion, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-            // ============ PEDIDO MAPPINGS ============
+            // ============ PEDIDO MAPPINGS (ACTUALIZADO) ============
             CreateMap<Pedido, PedidoResponseDto>()
                 .ForMember(dest => dest.NombreUsuario, opt => opt.MapFrom(src => src.Usuario.Nombre))
+                // 👇 ESTA LÍNEA ES LA CLAVE: Mapeamos el objeto completo
+                .ForMember(dest => dest.Usuario, opt => opt.MapFrom(src => src.Usuario))
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items))
                 .ForMember(dest => dest.DireccionEnvio, opt => opt.MapFrom(src => src.DireccionEnvio));
 
@@ -59,6 +69,7 @@ namespace PastisserieAPI.Services.Mappings
                 .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => "Pendiente"))
                 .ForMember(dest => dest.Aprobado, opt => opt.MapFrom(src => false))
                 .ForMember(dest => dest.EsPersonalizado, opt => opt.MapFrom(src => src.PersonalizadoConfig != null))
+                .ForMember(dest => dest.MetodoPago, opt => opt.Ignore())
                 .ForMember(dest => dest.Items, opt => opt.Ignore())
                 .ForMember(dest => dest.PersonalizadoConfig, opt => opt.Ignore());
 
@@ -98,6 +109,8 @@ namespace PastisserieAPI.Services.Mappings
                 .ForMember(dest => dest.NombreUsuario, opt => opt.MapFrom(src => src.Usuario.Nombre))
                 .ForMember(dest => dest.NombreProducto, opt => opt.MapFrom(src => src.Producto.Nombre));
 
+            CreateMap<Notificacion, NotificacionResponseDto>();
+
             CreateMap<CreateReviewRequestDto, Review>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UsuarioId, opt => opt.Ignore())
@@ -117,6 +130,13 @@ namespace PastisserieAPI.Services.Mappings
 
             // ============ INGREDIENTE MAPPINGS ============
             CreateMap<Ingrediente, Ingrediente>();
+
+            // ============ PROMOCION MAPPINGS ============
+            CreateMap<Promocion, PromocionResponseDto>();
+            CreateMap<CreatePromocionRequestDto, Promocion>()
+                .ForMember(dest => dest.FechaCreacion, opt => opt.MapFrom(src => DateTime.UtcNow));
+            CreateMap<UpdatePromocionRequestDto, Promocion>()
+                .ForMember(dest => dest.FechaActualizacion, opt => opt.MapFrom(src => DateTime.UtcNow));
         }
     }
 }

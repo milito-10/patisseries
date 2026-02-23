@@ -12,6 +12,10 @@ namespace PastisserieAPI.Core.Entities
         public int UsuarioId { get; set; }
 
         [Required]
+        [MaxLength(100)]
+        public string Titulo { get; set; } = string.Empty;
+
+        [Required]
         [MaxLength(50)]
         public string Tipo { get; set; } = string.Empty;
 
@@ -19,7 +23,7 @@ namespace PastisserieAPI.Core.Entities
         [MaxLength(1000)]
         public string Mensaje { get; set; } = string.Empty;
 
-        public DateTime Fecha { get; set; } = DateTime.UtcNow;
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
         public bool Leida { get; set; } = false;
 
