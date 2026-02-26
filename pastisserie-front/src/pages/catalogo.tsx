@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { FiFilter, FiSearch } from 'react-icons/fi';
 import api from '../api/axios';
 import ProductCard from '../components/ProductCard';
-import LoadingScreen from '../components/LoadingScreen';
 import { type Producto } from '../types';
+import { ProductListSkeleton, CategorySkeleton } from '../components/common/Skeletons';
 
 const Catalogo = () => {
     const [productos, setProductos] = useState<Producto[]>([]);
@@ -15,28 +15,25 @@ const Catalogo = () => {
 
     useEffect(() => {
         fetchProductos();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchProductos = async () => {
+        setLoading(true);
         try {
             const response = await api.get('/productos');
-            console.log("📦 API Response Productos:", response.data);
 
-            // Robust check for data
             const rawData = response?.data?.data ||
                 response?.data?.result ||
                 response?.data || [];
 
             const data: Producto[] = Array.isArray(rawData) ? rawData : [];
-
-            // A veces el backend devuelve los productos directamente o dentro de un objeto 'success'
             const productosValidos = data.filter(p => p.activo !== false);
             setProductos(productosValidos);
 
         } catch (error: any) {
             console.error("❌ Error API:", error.response?.data || error.message);
-            // toast.error('Error al cargar el catálogo'); // Moved to UI for better UX
-            setProductos([]); // Ensure empty state
+            setProductos([]);
         } finally {
             setLoading(false);
         }
@@ -59,8 +56,6 @@ const Catalogo = () => {
         });
 
     const categorias = ['Todos', ...new Set(productos.map(p => p.categoria).filter(Boolean))];
-
-    if (loading) return <LoadingScreen />;
 
     return (
         <div className="min-h-screen bg-gray-50 pt-24 pb-20 animate-fade-in">
@@ -87,18 +82,26 @@ const Catalogo = () => {
                     {/* Categorías */}
                     <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar">
                         <FiFilter className="text-gray-400 flex-shrink-0 mr-2" />
-                        {categorias.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => setCategoriaFiltro(cat)}
-                                className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap uppercase tracking-widest ${categoriaFiltro === cat
-                                    ? 'bg-patisserie-red text-white shadow-lg scale-105'
-                                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-patisserie-red border border-gray-100'
-                                    }`}
-                            >
-                                {cat}
-                            </button>
-                        ))}
+                        {loading ? (
+                            <div className="flex gap-2">
+                                <CategorySkeleton />
+                                <CategorySkeleton />
+                                <CategorySkeleton />
+                            </div>
+                        ) : (
+                            categorias.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setCategoriaFiltro(cat)}
+                                    className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap uppercase tracking-widest ${categoriaFiltro === cat
+                                        ? 'bg-patisserie-red text-white shadow-lg scale-105'
+                                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-patisserie-red border border-gray-100'
+                                        }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))
+                        )}
                     </div>
 
                     {/* Ordenar y Filtros Adicionales */}
@@ -128,7 +131,9 @@ const Catalogo = () => {
                 </div>
 
                 {/* GRID DE PRODUCTOS */}
-                {productos.length === 0 && !loading ? (
+                {loading ? (
+                    <ProductListSkeleton count={8} />
+                ) : productos.length === 0 ? (
                     <div className="text-center py-32 bg-white rounded-3xl border border-dashed border-gray-200 shadow-sm max-w-4xl mx-auto">
                         <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                             <FiSearch className="text-3xl text-gray-300" />

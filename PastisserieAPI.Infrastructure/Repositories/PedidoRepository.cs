@@ -15,9 +15,10 @@ namespace PastisserieAPI.Infrastructure.Repositories
         public override async Task<IEnumerable<Pedido>> GetAllAsync()
         {
             return await _dbSet
-                .Include(p => p.Usuario)      // Soluciona el "Usuario Anónimo"
-                .Include(p => p.Items)        // Permite calcular productos vendidos
-                .OrderByDescending(p => p.FechaPedido) // Ordena del más reciente al más antiguo
+                .Include(p => p.Usuario)
+                .Include(p => p.Items)
+                    .ThenInclude(i => i.Producto)
+                .OrderByDescending(p => p.FechaPedido)
                 .ToListAsync();
         }
 
@@ -25,7 +26,8 @@ namespace PastisserieAPI.Infrastructure.Repositories
         {
             return await _dbSet
                 .Where(p => p.UsuarioId == usuarioId)
-                .Include(p => p.Items) // Agregamos items para ver detalles en el historial
+                .Include(p => p.Items)
+                    .ThenInclude(i => i.Producto)
                 .OrderByDescending(p => p.FechaPedido)
                 .ToListAsync();
         }
@@ -34,7 +36,9 @@ namespace PastisserieAPI.Infrastructure.Repositories
         {
             return await _dbSet
                 .Where(p => p.Estado == estado)
-                .Include(p => p.Usuario) // Importante si filtras por estado en admin
+                .Include(p => p.Usuario)
+                .Include(p => p.Items)
+                    .ThenInclude(i => i.Producto)
                 .OrderBy(p => p.FechaPedido)
                 .ToListAsync();
         }
@@ -59,6 +63,8 @@ namespace PastisserieAPI.Infrastructure.Repositories
             return await _dbSet
                 .Where(p => p.Estado == "Pendiente" || p.Estado == "Confirmado")
                 .Include(p => p.Usuario)
+                .Include(p => p.Items)
+                    .ThenInclude(i => i.Producto)
                 .OrderBy(p => p.FechaPedido)
                 .ToListAsync();
         }
@@ -68,6 +74,8 @@ namespace PastisserieAPI.Infrastructure.Repositories
             return await _dbSet
                 .Where(p => p.Estado == "EnPreparacion")
                 .Include(p => p.Usuario)
+                .Include(p => p.Items)
+                    .ThenInclude(i => i.Producto)
                 .ToListAsync();
         }
     }

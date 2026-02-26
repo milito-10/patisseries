@@ -60,7 +60,7 @@ namespace PastisserieAPI.Services.Mappings
                 .ForMember(dest => dest.DireccionEnvio, opt => opt.MapFrom(src => src.DireccionEnvio));
 
             CreateMap<PedidoItem, PedidoItemResponseDto>()
-                .ForMember(dest => dest.NombreProducto, opt => opt.MapFrom(src => src.Producto.Nombre));
+                .ForMember(dest => dest.NombreProducto, opt => opt.MapFrom(src => src.Producto != null ? src.Producto.Nombre : "Producto Desconocido"));
 
             CreateMap<CreatePedidoRequestDto, Pedido>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())

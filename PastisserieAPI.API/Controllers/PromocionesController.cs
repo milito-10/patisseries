@@ -23,35 +23,20 @@ namespace PastisserieAPI.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] bool mostrarTodas = false)
         {
-            try 
-            {
-                var promociones = await _unitOfWork.Promociones.GetAllAsync();
-                
-                // Si NO es admin, solo mostrar activas y que no hayan expirado
-                if (!User.IsInRole("Admin"))
-                {
-                    var now = DateTime.Now;
-                    promociones = promociones.Where(p => p.Activo && p.FechaInicio <= now && p.FechaFin >= now).ToList();
-                }
+            var promociones = await _unitOfWork.Promociones.GetAllAsync();
+            var now = DateTime.UtcNow;
 
-                var promocionesDto = _mapper.Map<List<PromocionResponseDto>>(promociones);
-                return Ok(ApiResponse<List<PromocionResponseDto>>.SuccessResponse(promocionesDto));
-            }
-            catch (Exception ex)
+            // Por defecto (tienda), solo mostrar activas y vigentes.
+            // Si mostrarTodas es true (y es admin), mostrar el listado completo.
+            if (!mostrarTodas || !User.IsInRole("Admin"))
             {
-                // LOGGING A ARCHIVO
-                try {
-                    var logPath = Path.Combine(Directory.GetCurrentDirectory(), "logs");
-                    if (!Directory.Exists(logPath)) Directory.CreateDirectory(logPath);
-                    System.IO.File.AppendAllText(Path.Combine(logPath, "promociones_error.txt"), 
-                        $"{DateTime.Now}: {ex.Message}\n{ex.StackTrace}\n\n");
-                } catch { /* Ignorar error de log */ }
-
-                Console.WriteLine($"Error obteniendo promociones: {ex.Message}");
-                return StatusCode(500, ApiResponse.ErrorResponse("Error al obtener promociones: " + ex.Message));
+                promociones = promociones.Where(p => p.Activo && p.FechaInicio <= now && p.FechaFin >= now).ToList();
             }
+
+            var promocionesDto = _mapper.Map<List<PromocionResponseDto>>(promociones);
+            return Ok(ApiResponse<List<PromocionResponseDto>>.SuccessResponse(promocionesDto));
         }
 
         [HttpGet("{id}")]
@@ -70,6 +55,11 @@ namespace PastisserieAPI.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(CreatePromocionRequestDto request)
         {
+            if (request.FechaFin <= request.FechaInicio)
+            {
+                return BadRequest(ApiResponse.ErrorResponse("La fecha de fin debe ser posterior a la fecha de inicio"));
+            }
+
             var promocion = _mapper.Map<Promocion>(request);
             await _unitOfWork.Promociones.AddAsync(promocion);
             await _unitOfWork.SaveChangesAsync();
@@ -87,6 +77,11 @@ namespace PastisserieAPI.API.Controllers
 
             var promocion = await _unitOfWork.Promociones.GetByIdAsync(id);
             if (promocion == null) return NotFound(ApiResponse.ErrorResponse("Promoción no encontrada"));
+
+            if (request.FechaFin <= request.FechaInicio)
+            {
+                return BadRequest(ApiResponse.ErrorResponse("La fecha de fin debe ser posterior a la fecha de inicio"));
+            }
 
             _mapper.Map(request, promocion);
             await _unitOfWork.Promociones.UpdateAsync(promocion);

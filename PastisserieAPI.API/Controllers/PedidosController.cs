@@ -22,9 +22,9 @@ namespace PastisserieAPI.API.Controllers
 
         // 👇👇👇 ESTA ES LA PARTE QUE TE FALTABA 👇👇👇
         [HttpGet("todos")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllTodos()
         {
-            // Usamos GetAllAsync (Asegúrate de tenerlo en tu IPedidoService)
             var pedidos = await _pedidoService.GetAllAsync();
             return Ok(ApiResponse<List<PedidoResponseDto>>.SuccessResponse(pedidos));
         }

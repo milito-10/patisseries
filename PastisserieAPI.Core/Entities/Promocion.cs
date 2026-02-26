@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PastisserieAPI.Core.Entities
 {
-    public class Promocion
+    public class Promocion : IValidatableObject
     {
         [Key]
         public int Id { get; set; }
@@ -68,6 +68,17 @@ namespace PastisserieAPI.Core.Entities
         {
             var ahora = DateTime.UtcNow;
             return Activo && ahora >= FechaInicio && ahora <= FechaFin;
+        }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (FechaFin <= FechaInicio)
+            {
+                yield return new ValidationResult(
+                    "La fecha de fin debe ser posterior a la fecha de inicio.",
+                    new[] { nameof(FechaFin) }
+                );
+            }
         }
     }
 }

@@ -130,12 +130,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await authService.register(data);
 
-      if (response.success && response.data) {
-        // En este backend actual regisrate no devuelve token, 
-        // así que el usuario debe loguearse manualmente o 
-        // podríamos llamar a login(data) aquí.
-        toast.success('Cuenta creada exitosamente. Ya puedes iniciar sesión.');
-        return true;
+      if (response.success) {
+        // AUTOMATIZACIÓN: Intentar login inmediato tras registro
+        return await login({ email: data.email, password: data.password });
       } else {
         toast.error(response.message || 'Error al registrarse');
         return false;

@@ -39,20 +39,20 @@ const AdminLayout = () => {
                 fixed inset-y-0 left-0 z-30 w-64 bg-[#7D2121] text-white flex flex-col shadow-xl transition-transform duration-300 md:relative md:translate-x-0
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             `}>
-                <div className="p-6 flex items-center justify-between">
+                <Link to="/" className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors group">
                     <div className="flex items-center gap-3">
-                        <div className="bg-[#EBCfa8] p-2 rounded-full text-[#7D2121]">
+                        <div className="bg-[#EBCfa8] p-2 rounded-full text-[#7D2121] group-hover:scale-110 transition-transform">
                             <FiBox size={20} />
                         </div>
                         <div>
                             <h1 className="font-serif font-bold text-lg leading-tight">Patisseries</h1>
-                            <p className="text-xs text-white/60">Panel Admin</p>
+                            <p className="text-xs text-white/60 text-left">Panel Admin</p>
                         </div>
                     </div>
-                    <button className="md:hidden text-white" onClick={() => setIsSidebarOpen(false)}>
+                    <button className="md:hidden text-white" onClick={(e) => { e.preventDefault(); setIsSidebarOpen(false); }}>
                         <FiX size={24} />
                     </button>
-                </div>
+                </Link>
 
                 <nav className="flex-1 mt-6 px-4 space-y-2 overflow-y-auto">
                     <p className="text-xs text-white/40 uppercase font-bold px-4 mb-2">Menu</p>
@@ -118,21 +118,21 @@ const AdminLayout = () => {
 
                     {/* User Profile */}
                     <div className="flex items-center gap-2 md:gap-4">
-                        <a href="/" className="p-2 text-[#7D2121] bg-red-50 hover:bg-red-100 rounded-full text-[10px] md:text-xs font-bold whitespace-nowrap" title="Ver Tienda">
+                        <Link to="/" className="p-2 text-[#7D2121] bg-red-50 hover:bg-red-100 rounded-full text-[10px] md:text-xs font-bold whitespace-nowrap" title="Ver Tienda">
                             Tienda
-                        </a>
+                        </Link>
 
                         <Notificaciones />
 
-                        <div className="flex items-center gap-3 pl-2 md:pl-4 border-l">
+                        <Link to="/perfil" className="flex items-center gap-3 pl-2 md:pl-4 border-l hover:bg-gray-50 transition-colors p-1 rounded-lg">
                             <div className="text-right hidden lg:block">
                                 <p className="text-sm font-bold text-gray-800">{user?.nombre || 'Administrador'}</p>
-                                <p className="text-xs text-gray-500">Admin</p>
+                                <p className="text-xs text-gray-500">Mi Perfil</p>
                             </div>
                             <div className="w-8 h-8 md:w-10 md:h-10 bg-[#7D2121] text-white rounded-full flex items-center justify-center font-bold text-sm md:text-base">
                                 {user?.nombre?.substring(0, 2).toUpperCase() || 'AD'}
                             </div>
-                        </div>
+                        </Link>
                     </div>
                 </header>
 

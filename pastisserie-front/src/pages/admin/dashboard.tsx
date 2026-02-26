@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FiTrendingUp, FiShoppingCart, FiBox, FiTag, FiArrowRight
+  FiTrendingUp, FiShoppingCart, FiBox, FiTag, FiArrowRight, FiAlertCircle
 } from 'react-icons/fi';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -11,7 +11,8 @@ import {
 // Servicios y Tipos
 import { orderService } from '../../services/orderService';
 import { promocionesService } from '../../services/promocionesService';
-import type { Pedido } from '../../types';
+import { productService } from '../../services/productService';
+import type { Pedido, Producto } from '../../types';
 
 const Dashboard = () => {
   const [orders, setOrders] = useState<Pedido[]>([]);
@@ -24,6 +25,7 @@ const Dashboard = () => {
     totalPedidos: 0,
     productosVendidos: 0,
     promocionesActivas: 0,
+    productosBajos: [] as Producto[],
     chartData: [] as { name: string; ventas: number }[],
     topProducts: [] as { name: string; cantidad: number }[]
   });
@@ -34,9 +36,10 @@ const Dashboard = () => {
         setLoading(true);
 
         // Cargar datos en paralelo
-        const [allOrders, promosResponse] = await Promise.all([
+        const [allOrders, promosResponse, productsData] = await Promise.all([
           orderService.getAllOrders() as Promise<Pedido[]>,
-          promocionesService.getAll()
+          promocionesService.getAll(),
+          productService.getAll()
         ]);
 
         console.log("Datos del Dashboard:", allOrders);
@@ -59,6 +62,12 @@ const Dashboard = () => {
         const activePromos = promosResponse.success && Array.isArray(promosResponse.data)
           ? (promosResponse.data as any[]).filter((p: any) => p.activo && new Date(p.fechaFin) > now).length
           : 0;
+
+        // Contar productos con bajo stock (< 5)
+        const productsList = Array.isArray(productsData) ? productsData : productsData?.data || [];
+        const lowStockItems = Array.isArray(productsList)
+          ? productsList.filter((p: any) => p.stock < 5).sort((a, b) => a.stock - b.stock)
+          : [];
 
         // ---------------------------------------------------
         // 2. GRÁFICA DE LÍNEAS (Ventas por día de la semana)
@@ -118,6 +127,7 @@ const Dashboard = () => {
           totalPedidos: countOrders,
           productosVendidos: countProducts,
           promocionesActivas: activePromos,
+          productosBajos: lowStockItems,
           chartData: salesChartData,
           topProducts: topProductsReal
         });
@@ -260,6 +270,25 @@ const Dashboard = () => {
             <FiTag size={20} />
           </div>
         </div>
+
+        {/* Alerta Stock Bajo */}
+        <div
+          className={`p-6 rounded-2xl shadow-sm border flex justify-between items-start cursor-pointer hover:shadow-md transition-all group ${stats.productosBajos.length > 0 ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}
+          onClick={() => navigate('/admin/productos')}
+        >
+          <div>
+            <p className="text-gray-500 text-sm font-medium mb-1">Stock Crítico</p>
+            <h3 className={`text-2xl font-bold mb-1 ${stats.productosBajos.length > 0 ? 'text-red-700' : 'text-gray-800'}`}>
+              {stats.productosBajos.length}
+            </h3>
+            <span className={`text-xs font-semibold ${stats.productosBajos.length > 0 ? 'text-red-600 animate-pulse' : 'text-green-500'}`}>
+              {stats.productosBajos.length > 0 ? 'Reponer ahora' : 'Todo en regla'}
+            </span>
+          </div>
+          <div className={`p-3 rounded-xl transition-transform group-hover:rotate-12 ${stats.productosBajos.length > 0 ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
+            <FiBox size={20} />
+          </div>
+        </div>
       </div>
 
       {/* GRÁFICAS */}
@@ -315,6 +344,36 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {stats.productosBajos.length > 0 && (
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 animate-fade-in shadow-inner">
+          <div className="p-4 bg-red-600 text-white rounded-2xl shadow-lg shadow-red-600/20">
+            <FiAlertCircle size={32} />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <h4 className="text-red-800 font-black text-lg">¡Atención! Stock Crítico</h4>
+            <p className="text-red-600 text-sm">Los siguientes productos tienen menos de 5 unidades:</p>
+            <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
+              {stats.productosBajos.slice(0, 5).map((p, idx) => (
+                <span key={idx} className="bg-white border border-red-200 text-red-700 px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
+                  {p.nombre} ({p.stock})
+                </span>
+              ))}
+              {stats.productosBajos.length > 5 && (
+                <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-[10px] font-bold">
+                  +{stats.productosBajos.length - 5} más...
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/admin/productos')}
+            className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-red-700 transition-all shadow-md active:scale-95 shrink-0"
+          >
+            Ir a Inventario
+          </button>
+        </div>
+      )}
 
       {/* TABLA DE PEDIDOS RECIENTES */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

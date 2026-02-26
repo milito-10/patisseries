@@ -36,6 +36,10 @@ const ProductosAdmin = () => {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
+  const [filtroCategoria, setFiltroCategoria] = useState('');
+  const [filtroStock, setFiltroStock] = useState<'todos' | 'bajo' | 'agotado'>('todos');
+  const [ordenarPor, setOrdenarPor] = useState<'nombre' | 'precio' | 'stock'>('nombre');
+  const [ordenDireccion, setOrdenDireccion] = useState<'asc' | 'desc'>('asc');
 
   // Estados del Modal
   const [showModal, setShowModal] = useState(false);
@@ -219,17 +223,51 @@ const ProductosAdmin = () => {
   };
 
   const listaSegura = Array.isArray(productos) ? productos : [];
+
+  // 1. FILTRADO
   const productosFiltrados = listaSegura.filter(p => {
+    // A) Búsqueda por texto (ID, nombre, etc)
     const query = busqueda.toLowerCase().trim();
-    if (!query) return true;
+    const matchesBusqueda = !query ||
+      (p.nombre?.toLowerCase() || '').includes(query) ||
+      (p.categoria?.toLowerCase() || '').includes(query) ||
+      (p.descripcion?.toLowerCase() || '').includes(query) ||
+      p.id.toString() === query || `#${p.id}` === query || p.id.toString().includes(query);
 
-    const nombre = p.nombre?.toLowerCase() || '';
-    const categoria = p.categoria?.toLowerCase() || '';
-    const descripcion = p.descripcion?.toLowerCase() || '';
-    const idMatch = p.id.toString() === query || `#${p.id}` === query || p.id.toString().includes(query);
+    // B) Filtro por Categoría
+    const matchesCategoria = !filtroCategoria || p.categoria === filtroCategoria;
 
-    return nombre.includes(query) || categoria.includes(query) || descripcion.includes(query) || idMatch;
+    // C) Filtro por Stock
+    let matchesStock = true;
+    if (filtroStock === 'bajo') matchesStock = p.stock > 0 && p.stock < 5;
+    else if (filtroStock === 'agotado') matchesStock = p.stock <= 0;
+
+    return matchesBusqueda && matchesCategoria && matchesStock;
   });
+
+  // 2. ORDENADO
+  const productosOrdenados = [...productosFiltrados].sort((a, b) => {
+    let valA: any = a[ordenarPor];
+    let valB: any = b[ordenarPor];
+
+    if (typeof valA === 'string') {
+      valA = valA.toLowerCase();
+      valB = valB.toLowerCase();
+    }
+
+    if (valA < valB) return ordenDireccion === 'asc' ? -1 : 1;
+    if (valA > valB) return ordenDireccion === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const toggleOrden = (key: 'nombre' | 'precio' | 'stock') => {
+    if (ordenarPor === key) {
+      setOrdenDireccion(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setOrdenarPor(key);
+      setOrdenDireccion('asc');
+    }
+  };
 
   return (
     <div className="animate-fade-in p-2">
@@ -257,38 +295,121 @@ const ProductosAdmin = () => {
 
       {/* Tabla */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
-          <FiSearch className="text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar producto..."
-            className="bg-transparent outline-none text-sm w-full"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-          />
+        <div className="p-4 border-b border-gray-100 flex flex-wrap items-center gap-4 bg-gray-50/50">
+          {/* Búsqueda */}
+          <div className="flex-1 min-w-[200px] relative">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar por ID, nombre o categoría..."
+              className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#7D2121]/20 transition-all"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </div>
+
+          {/* Filtro Categoría */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Categoría:</span>
+            <select
+              value={filtroCategoria}
+              onChange={(e) => setFiltroCategoria(e.target.value)}
+              className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#7D2121]/20"
+            >
+              <option value="">Todas</option>
+              {categorias.map(cat => (
+                <option key={cat.id} value={cat.nombre}>{cat.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtro Stock */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Estado:</span>
+            <select
+              value={filtroStock}
+              onChange={(e) => setFiltroStock(e.target.value as any)}
+              className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#7D2121]/20"
+            >
+              <option value="todos">Todos</option>
+              <option value="bajo">Stock Bajo {'<'} 5</option>
+              <option value="agotado">Agotados</option>
+            </select>
+          </div>
+
+          {/* Limpiar Filtros */}
+          {(busqueda || filtroCategoria || filtroStock !== 'todos') && (
+            <button
+              onClick={() => { setBusqueda(''); setFiltroCategoria(''); setFiltroStock('todos'); }}
+              className="text-xs font-bold text-red-600 hover:text-red-800 flex items-center gap-1"
+            >
+              <FiX /> Limpiar
+            </button>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
             <thead className="bg-gray-100 text-gray-500 uppercase font-bold text-xs">
               <tr>
                 <th className="px-6 py-4">Imagen</th>
-                <th className="px-6 py-4">Nombre</th>
-                <th className="px-6 py-4">Precio</th>
-                <th className="px-6 py-4">Stock</th>
+                <th
+                  className="px-6 py-4 cursor-pointer hover:bg-gray-200 transition-colors group"
+                  onClick={() => toggleOrden('nombre')}
+                >
+                  <div className="flex items-center gap-2">
+                    Nombre
+                    <span className={`text-[10px] ${ordenarPor === 'nombre' ? 'text-[#7D2121]' : 'text-gray-300 opacity-0 group-hover:opacity-100'}`}>
+                      {ordenDireccion === 'asc' ? '▲' : '▼'}
+                    </span>
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 cursor-pointer hover:bg-gray-200 transition-colors group"
+                  onClick={() => toggleOrden('precio')}
+                >
+                  <div className="flex items-center gap-2">
+                    Precio
+                    <span className={`text-[10px] ${ordenarPor === 'precio' ? 'text-[#7D2121]' : 'text-gray-300 opacity-0 group-hover:opacity-100'}`}>
+                      {ordenDireccion === 'asc' ? '▲' : '▼'}
+                    </span>
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 cursor-pointer hover:bg-gray-200 transition-colors group"
+                  onClick={() => toggleOrden('stock')}
+                >
+                  <div className="flex items-center gap-2">
+                    Stock
+                    <span className={`text-[10px] ${ordenarPor === 'stock' ? 'text-[#7D2121]' : 'text-gray-300 opacity-0 group-hover:opacity-100'}`}>
+                      {ordenDireccion === 'asc' ? '▲' : '▼'}
+                    </span>
+                  </div>
+                </th>
                 <th className="px-6 py-4">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr><td colSpan={5} className="text-center py-8">Cargando...</td></tr>
-              ) : productosFiltrados.map((prod) => (
+              ) : productosOrdenados.map((prod) => (
                 <tr key={prod.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <img src={prod.imagenUrl || 'https://via.placeholder.com/40'} alt="mini" className="w-10 h-10 rounded object-cover bg-gray-200" />
                   </td>
                   <td className="px-6 py-4 font-medium text-gray-800">{prod.nombre}</td>
                   <td className="px-6 py-4 font-bold text-[#7D2121]">{formatCurrency(prod.precio)}</td>
-                  <td className="px-6 py-4">{prod.stock}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className={`font-bold ${prod.stock < 5 ? 'text-red-600 animate-pulse' : 'text-gray-700'}`}>
+                        {prod.stock} unidades
+                      </span>
+                      {prod.stock < 5 && (
+                        <span className="text-[9px] font-black text-red-500 uppercase tracking-tighter bg-red-50 px-1.5 py-0.5 rounded-md border border-red-100 w-fit">
+                          Stock Bajo
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 flex gap-2">
                     <button onClick={() => openEditModal(prod)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><FiEdit /></button>
                     <button onClick={() => handleDelete(prod.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><FiTrash2 /></button>

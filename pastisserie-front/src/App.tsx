@@ -33,29 +33,7 @@ import UsuariosAdmin from './pages/admin/usuariosAdmin';
 import PromocionesAdmin from './pages/admin/promocionesAdmin';
 import Configuracion from './pages/admin/Configuracion';
 
-import { useEffect } from 'react';
-import { seedDatabase } from './utils/seeder';
-
 function App() {
-  useEffect(() => {
-    // Check seeder background if needed, but don't block main thread unnecessarily
-    const checkSeeder = async () => {
-      const hasSeeded = localStorage.getItem('db_seeded_v10');
-      if (!hasSeeded) {
-        try {
-          await seedDatabase();
-          localStorage.setItem('db_seeded_v10', 'true');
-        } catch (e) {
-          console.error("Seeder error", e);
-        }
-      }
-    };
-    checkSeeder();
-  }, []);
-
-
-
-
   return (
 
     <AuthProvider>
